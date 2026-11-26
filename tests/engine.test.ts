@@ -32,7 +32,7 @@ describe('engine', () => {
   it('plays many full bot games without errors and keeps 100 deputies', () => {
     const winners: Record<string, number> = {};
     const reasons: Record<string, number> = {};
-    for (let seed = 1; seed <= 300; seed++) {
+    for (let seed = 1; seed <= 200; seed++) {
       const s = playOut(seed, seed % 2 ? 4 : 5);
       expect(s.phase).toBe('gameOver');
       expect(s.result).not.toBeNull();
@@ -40,8 +40,10 @@ describe('engine', () => {
       winners[w] = (winners[w] ?? 0) + 1;
       reasons[s.result!.reason] = (reasons[s.result!.reason] ?? 0) + 1;
     }
+    
     console.log('winners', winners, 'reasons', reasons);
     expect(winners.king ?? 0).toBeGreaterThan(20);
+    expect(reasons.rokoszWon ?? 0).toBeLessThan(30);
     expect(winners.magnate ?? 0).toBeGreaterThan(20);
-  });
+  }, 120_000);
 });

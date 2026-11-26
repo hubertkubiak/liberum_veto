@@ -165,7 +165,7 @@ function magnatePlan(s: GameState, h: HouseId) {
   });
   const blockBonus = Math.max(...blockChance) * 1.0;
 
-  const acceptScore = offerValue - acceptCost + t.greed * 0.8 + (r() - 0.5) * 1.5;
+  const acceptScore = offerValue - acceptCost + t.greed * 1.6 + (r() - 0.5) * 1.5;
   const rejectScore = rejectGain + blockBonus + Math.max(0, kingThreat) * 1.2 + (1 - t.greed) * 0.6;
   const accept = acceptScore > rejectScore;
 
@@ -238,11 +238,17 @@ function negotiate(s: GameState, role: Role, r: () => number): Decision {
 function muster(s: GameState, role: Role, r: () => number): Decision {
   const t = s.traits[role]!;
   if (role === 'king') {
-    const reserve = 10;
+    // Deterrence: keep the king's strength above the strongest possible rebel.
+    const kingNow = strength(s, 'king', fullCommit(s, 'king', false)).total;
+    const threat = s.sejm >= 2
+      ? Math.max(...activeHouses(s).map((h) => strength(s, h, fullCommit(s, h, false), { rokoszanin: true }).total + 3 + mag(s, h).hand.length * 2))
+      : 0;
+    const deficit = Math.max(0, threat - kingNow + 2);
+    const reserve = s.sejm >= 5 ? 4 : 8;
     const spare = Math.max(0, s.king.ducats - reserve);
-    const wantsWar = s.sejm >= 3 && t.boldness > 0.5;
-    const budget = wantsWar ? s.king.ducats - 4 : s.era >= 2 ? spare * 0.5 : 0;
-    return { kind: 'muster', buy: maxMuster(s, 'king', Math.max(0, Math.floor(budget))) };
+    const wantsWar = s.sejm >= 3 && t.boldness > 0.6;
+    const want = wantsWar ? maxMuster(s, 'king', spare) : Math.max(deficit, s.era >= 2 ? Math.floor(maxMuster(s, 'king', spare) * 0.4) : 0);
+    return { kind: 'muster', buy: Math.min(want, maxMuster(s, 'king', s.king.ducats - 2)) };
   }
   const m = mag(s, role);
   // Arm when the king arms; otherwise save ducats for foundations.
@@ -287,9 +293,9 @@ function declare(s: GameState, role: Role, r: () => number): Decision {
   const mine = strength(s, h, fullCommit(s, h, false), { rokoszanin: true }).total + 3;
   const king = strength(s, 'king', fullCommit(s, 'king', false)).total;
   const courtiers = act.filter((x) => x !== h && isCourtier(mag(s, x)));
-  const defenders = king + courtiers.reduce((a, x) => a + estMagnateStrength(s, x, true), 0) * 0.3;
+  const defenders = king + courtiers.reduce((a, x) => a + estMagnateStrength(s, x, true), 0) * 0.8 + 2;
   const chance = attackChance(Math.round(mine - defenders));
-  return { kind: 'declare', declare: chance >= 0.75 - t.boldness * 0.1 && r() < 0.7 };
+  return { kind: 'declare', declare: chance >= 0.88 - t.boldness * 0.08 && r() < 0.5 };
 }
 
 function side(s: GameState, h: HouseId, r: () => number): Decision {
