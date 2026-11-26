@@ -88,6 +88,22 @@ export function tallyLaws(s: GameState, votes: Partial<Record<HouseId, VoteDecis
   });
 }
 
+/**
+ * Minimum magnate vote weight that must vote ZA for the law to pass,
+ * together with the total magnate weight available. `need > total` means impossible.
+ */
+export function supportNeeded(s: GameState, law: LawCard): { need: number; total: number } {
+  const total = activeHouses(s).reduce((a, h) => a + voteWeight(s, h, law), 0);
+  const res = effectiveResistance(s, law);
+  const need = Math.max(0, Math.floor((total + res - s.king.deputies) / 2) + 1);
+  return { need, total };
+}
+
+/** Esteem everyone can see: base + tokens + grants (cards and ducats are hidden). */
+export function publicEsteem(m: MagnateState): number {
+  return 3 + m.esteemTokens + m.grants.reduce((a, g) => a + g.esteem, 0);
+}
+
 export function acceptsOffer(v: VoteDecision): boolean {
   return v.votes.every(Boolean);
 }

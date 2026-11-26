@@ -1,15 +1,16 @@
 import { Coat } from '../art/heraldry';
 import { BannerIcon, CrownIcon, DeputyIcon, DucatIcon, EsteemIcon, HandIcon, VetoIcon } from '../art/icons';
 import { COURT_THRESHOLDS, ERA_NAMES, HOUSES, TRACK_MAX } from '../engine/data';
-import { isCourtier, magnateScore, trackStrengthDiv } from '../engine/rules';
+import { isCourtier, magnateScore, publicEsteem, trackStrengthDiv } from '../engine/rules';
 import type { GameState, HouseId, Role } from '../engine/types';
 import { BenefitMini, CardBack, CheckView, GrantCardView } from './Cards';
+import { TIP } from './guide';
 
 export type Sees = (r: Role) => boolean;
 
-function Stat({ icon, value, title, hidden }: { icon: React.ReactNode; value: React.ReactNode; title: string; hidden?: boolean }) {
+function Stat({ icon, value, title, tip, hidden }: { icon: React.ReactNode; value: React.ReactNode; title: string; tip: string; hidden?: boolean }) {
   return (
-    <span className={`stat ${hidden ? 'is-hidden' : ''}`} title={title}>
+    <span className={`stat ${hidden ? 'is-hidden' : ''}`} data-tip={`${tip.startsWith(title) ? '' : `${title}: `}${hidden ? '(wartość ukryta) ' : ''}${tip}`}>
       {icon}
       <b>{hidden ? '?' : value}</b>
     </span>
@@ -55,12 +56,12 @@ export function MagnatePanel({ s, h, sees }: { s: GameState; h: HouseId; sees: S
             {info.name}
             {s.human === h && <span className="you">Ty</span>}
           </div>
-          <div className="ability" title={info.abilityText}>
+          <div className="ability" data-tip={`Zdolność rodu — ${info.ability}: ${info.abilityText}`}>
             {info.ability}
           </div>
         </div>
         <div className="panel-badges">
-          {isCourtier(m) && !m.eliminated && <span className="badge badge-court" title="Ma nadanie od króla">stronnik dworu</span>}
+          {isCourtier(m) && !m.eliminated && <span className="badge badge-court" data-tip={TIP.court}>stronnik dworu</span>}
           {m.eliminated && <span className="badge badge-out">odpadł</span>}
           {st === 'thinking' && <span className="badge badge-think">namyśla się…</span>}
           {st === 'done' && <span className="badge badge-done">✓ gotowe</span>}
@@ -68,17 +69,21 @@ export function MagnatePanel({ s, h, sees }: { s: GameState; h: HouseId; sees: S
       </div>
 
       <div className="stats">
-        <Stat icon={<DeputyIcon size={18} />} value={m.deputies} title="Posłowie" />
-        <Stat icon={<BannerIcon size={18} color={info.color} />} value={m.banners} title="Chorągwie jawne" />
-        <Stat icon={<DucatIcon size={18} />} value={m.ducats} title="Dukaty (za zasłonką)" hidden={!visible} />
-        <Stat icon={<EsteemIcon size={18} />} value={magnateScore(m).total} title="Estyma (wynik)" hidden={!visible} />
-        <Stat icon={<HandIcon size={18} />} value={m.hand.length} title="Karty korzyści w ręce" />
+        <Stat icon={<DeputyIcon size={18} />} value={m.deputies} title="Posłowie" tip={TIP.deputies} />
+        <Stat icon={<BannerIcon size={18} color={info.color} />} value={m.banners} title="Chorągwie jawne" tip={TIP.banners} />
+        <Stat icon={<DucatIcon size={18} />} value={m.ducats} title="Dukaty" tip={TIP.ducats} hidden={!visible} />
+        {visible ? (
+          <Stat icon={<EsteemIcon size={18} />} value={magnateScore(m).total} title="Estyma" tip={TIP.esteem} />
+        ) : (
+          <Stat icon={<EsteemIcon size={18} />} value={`≥${publicEsteem(m)}`} title="Estyma" tip={`${TIP.publicEsteem} ${TIP.esteem}`} />
+        )}
+        <Stat icon={<HandIcon size={18} />} value={m.hand.length} title="Karty w ręce" tip={TIP.hand} />
       </div>
 
       {m.grants.length > 0 && (
         <div className="grants">
           {m.grants.map((g) => (
-            <span key={g.id} className="grant-tag" title={`${g.name}: +${g.deputies} posłów, +${g.banners} ch., +${g.esteem} E`}>
+            <span key={g.id} className="grant-tag" data-tip={`${g.name}: +${g.deputies} posłów, +${g.banners} chorągwi, +${g.esteem} Estymy${g.strength ? `, +${g.strength} siły w starciu` : ''}. ${TIP.grant}`}>
               {g.name}
             </span>
           ))}
@@ -164,19 +169,19 @@ export function KingPanel({ s, sees }: { s: GameState; sees: Sees }) {
         </div>
       </div>
       <div className="stats">
-        <Stat icon={<CrownIcon size={18} />} value={k.track} title="Tor absolutyzmu" />
-        <Stat icon={<DeputyIcon size={18} />} value={k.deputies} title="Posłowie (stronnictwo)" />
-        <Stat icon={<BannerIcon size={18} color="#b07d12" />} value={k.banners} title="Chorągwie" />
-        <Stat icon={<DucatIcon size={18} />} value={k.ducats} title="Skarb" />
-        <Stat icon={<HandIcon size={18} />} value={k.grantHand.length} title="Nadania w ręce" />
+        <Stat icon={<CrownIcon size={18} />} value={k.track} title="Tor absolutyzmu" tip={TIP.kingTrack} />
+        <Stat icon={<DeputyIcon size={18} />} value={k.deputies} title="Posłowie króla" tip={TIP.kingDeputies} />
+        <Stat icon={<BannerIcon size={18} color="#b07d12" />} value={k.banners} title="Chorągwie" tip={TIP.kingBanners} />
+        <Stat icon={<DucatIcon size={18} />} value={k.ducats} title="Skarb" tip={TIP.kingDucats} />
+        <Stat icon={<HandIcon size={18} />} value={k.grantHand.length} title="Nadania w ręce" tip={TIP.kingGrants} />
       </div>
       <div className="court-thresholds">
         {COURT_THRESHOLDS.map((t) => (
-          <span key={t} className={`thr ${k.thresholdsReached.includes(t) ? 'on' : ''}`} title={`Próg ${t} posłów: +3 chorągwie`}>
+          <span key={t} className={`thr ${k.thresholdsReached.includes(t) ? 'on' : ''}`} data-tip={`Próg ${t} posłów króla: +3 chorągwie${k.thresholdsReached.includes(t) ? ' (osiągnięty)' : ''}.`}>
             {t}
           </span>
         ))}
-        <span className="thr-label">progi stronnictwa</span>
+        <span className="thr-label" data-tip={TIP.thresholds}>progi stronnictwa ⓘ</span>
       </div>
       {visible && k.grantHand.length > 0 && s.human !== 'king' && (
         <div className="grants">
@@ -199,8 +204,8 @@ export function TrackBar({ s, sees }: { s: GameState; sees: Sees }) {
     .map((h) => ({ h, v: Math.min(TRACK_MAX, magnateScore(s.magnates[h]!).total) }));
   return (
     <div className="track">
-      <div className="track-title">
-        <span>Tor absolutyzmu</span>
+      <div className="track-title" data-tip={TIP.track}>
+        <span>Tor absolutyzmu ⓘ</span>
         <span className="track-sub">złote pola co 5: +1 nadanie · siła króla w starciu: pole ÷ {div}</span>
       </div>
       <div className="track-cells">
@@ -216,7 +221,7 @@ export function TrackBar({ s, sees }: { s: GameState; sees: Sees }) {
               {markers
                 .filter((m) => m.v === i)
                 .map((m) => (
-                  <span key={m.h} className="esteem-dot" style={{ background: HOUSES[m.h].color }} title={`${HOUSES[m.h].name}: Estyma ${m.v}`} />
+                  <span key={m.h} className="esteem-dot" style={{ background: HOUSES[m.h].color }} data-tip={`${HOUSES[m.h].name}: Estyma ${m.v}`} />
                 ))}
             </span>
           </div>
@@ -236,7 +241,7 @@ export function PoolView({ n }: { n: number }) {
     return { x: 50 + Math.cos(a) * r, y: 50 + Math.sin(a) * r };
   });
   return (
-    <div className="pool">
+    <div className="pool" data-tip={TIP.pool}>
       <svg viewBox="0 0 100 100">
         <circle cx="50" cy="50" r="48" fill="#dbe8f3" stroke="#1f6aa5" strokeWidth="2" />
         {dots.map((d, i) => (

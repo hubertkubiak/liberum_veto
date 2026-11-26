@@ -11,13 +11,17 @@ import {
   mag,
   maxMuster,
   musterCost,
+  publicEsteem,
   strength,
+  supportNeeded,
   vetoBanned,
   vetoCost,
+  voteWeight,
 } from '../engine/rules';
-import type { Decision, GameState, HouseId, Role } from '../engine/types';
+import type { Decision, GameState, HouseId, LawCard, Role } from '../engine/types';
 import { BenefitCardView, CheckView, GrantCardView, LawCardView } from './Cards';
-import { PHASE_HELP, PHASE_TITLE, SPEECHES } from './text';
+import { TIP, TIPS } from './guide';
+import { PHASE_HELP, PHASE_TITLE, SPEECHES, roleKind } from './text';
 
 interface Props {
   s: GameState;
@@ -37,8 +41,48 @@ export function ActionPanel(p: Props) {
         <span className="action-title">{PHASE_TITLE[s.phase]}</span>
         {humanTurn && <span className="your-turn">Twoja decyzja</span>}
       </div>
+      {humanTurn && <Advice s={s} />}
       {body}
     </div>
+  );
+}
+
+function Advice({ s }: { s: GameState }) {
+  const [open, setOpen] = useState(() => localStorage.getItem('lv-advice') !== 'off');
+  const tip = s.human ? TIPS[roleKind(s.human)][s.phase] : undefined;
+  if (!tip) return null;
+  const toggle = () => {
+    localStorage.setItem('lv-advice', open ? 'off' : 'on');
+    setOpen(!open);
+  };
+  return (
+    <div className={`advice ${open ? '' : 'is-closed'}`}>
+      <button className="advice-head" onClick={toggle}>
+        <span className="advice-icon">💡</span> Rada {open ? '▾' : '▸'}
+      </button>
+      {open && <p>{tip}</p>}
+    </div>
+  );
+}
+
+/** How many magnate deputies the king must win over for a law. */
+function SupportLine({ s, law, backed }: { s: GameState; law: LawCard; backed?: number }) {
+  const { need, total } = supportNeeded(s, law);
+  if (need === 0) return <span className="support ok">przejdzie nawet bez magnatów</span>;
+  if (need > total) return <span className="support bad">nie do przegłosowania (opór za duży)</span>;
+  return (
+    <span
+      className={`support ${backed === undefined ? '' : backed >= need ? 'ok' : 'bad'}`}
+      data-tip={`Ustawa przejdzie, gdy ZA > PRZECIW + opór. Twoi posłowie (${s.king.deputies}) głosują ZA; potrzebujesz jeszcze magnatów mających łącznie co najmniej ${need} z ${total} posłów.`}
+    >
+      potrzeba ≥ <b>{need}</b> z {total} posłów magnatów
+      {backed !== undefined && (
+        <>
+          {' '}
+          · z ofertą: <b>{backed}</b> {backed >= need ? '✓' : '✗'}
+        </>
+      )}
+    </span>
   );
 }
 
@@ -95,7 +139,10 @@ function AgendaDecision({ s, act }: { s: GameState; act: (d: Decision) => void }
       <p className="help">Wybierz 2 ustawy na obrady. Trzecia trafi pod spód stosu. Opór uwzględnia poselstwo i dyrektywy.</p>
       <div className="choice-cards">
         {s.agendaOptions.map((l, i) => (
-          <LawCardView key={l.id} law={l} size="md" resistance={effectiveResistance(s, l)} selected={sel.includes(i)} onClick={() => toggle(i)} />
+          <div key={l.id} className="agenda-pick">
+            <LawCardView law={l} size="md" resistance={effectiveResistance(s, l)} selected={sel.includes(i)} onClick={() => toggle(i)} />
+            <SupportLine s={s} law={l} />
+          </div>
         ))}
       </div>
       <button className="btn btn-primary" disabled={sel.length !== need} onClick={() => act({ kind: 'agenda', keep: [sel[0] ?? 0, sel[1] ?? 1].sort() as [number, number] })}>
@@ -148,6 +195,22 @@ function OffersDecision({ s, act }: { s: GameState; act: (d: Decision) => void }
         magnat ani razu nie zagłosuje przeciw. Skarb: <b>{s.king.ducats} d</b>
         {total > s.king.ducats && <span className="warn"> · Uwaga: czeki ({total} d) przekraczają skarb — grozi czek bez pokrycia!</span>}
       </p>
+      <div className="support-box">
+        <div className="support-title" data-tip="Zakładamy, że magnat z niezerową ofertą (czek > 0 albo nadanie) zagłosuje ZA. To tylko szacunek — każdy może odrzucić ofertę.">
+          Rachunek głosów ⓘ
+        </div>
+        {s.agenda.map((l) => {
+          const backed = act_.reduce((a, h) => a + (offers[h].grantId || (offers[h].check ?? 0) > 0 ? voteWeight(s, h, l) : 0), 0);
+          return (
+            <div key={l.id} className="support-law">
+              <b>
+                {l.code} {l.name}
+              </b>{' '}
+              <span className="small">(tor +{l.track})</span> <SupportLine s={s} law={l} backed={backed} />
+            </div>
+          );
+        })}
+      </div>
       <div className="offer-rows">
         {act_.map((h) => (
           <div key={h} className="offer-row" style={{ ['--house' as string]: HOUSES[h].color }}>
@@ -157,6 +220,9 @@ function OffersDecision({ s, act }: { s: GameState; act: (d: Decision) => void }
                 <b>{HOUSES[h].name}</b>
                 <div className="small">
                   {mag(s, h).deputies} posłów{h === 'potocki' ? ' (+3 przy ⚔)' : ''}
+                </div>
+                <div className="small" data-tip={TIP.publicEsteem}>
+                  Estyma ≥ {publicEsteem(mag(s, h))}
                 </div>
               </div>
             </div>

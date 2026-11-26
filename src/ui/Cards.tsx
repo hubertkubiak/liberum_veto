@@ -3,6 +3,7 @@ import { CardArt } from '../art/cardArt';
 import { BannerIcon, DeputyIcon, DucatIcon, EsteemIcon, SwordsIcon, TaxIcon } from '../art/icons';
 import { FACTION_NAMES } from '../engine/data';
 import type { BenefitCard, EnvoyCard, GrantCard, LawCard } from '../engine/types';
+import { TIP } from './guide';
 
 interface Common {
   selected?: boolean;
@@ -35,8 +36,12 @@ function Frame({
   );
 }
 
-function Chip({ children, tone }: { children: ReactNode; tone?: string }) {
-  return <span className={`chip ${tone ? `chip-${tone}` : ''}`}>{children}</span>;
+function Chip({ children, tone, tip }: { children: ReactNode; tone?: string; tip?: string }) {
+  return (
+    <span className={`chip ${tone ? `chip-${tone}` : ''}`} data-tip={tip}>
+      {children}
+    </span>
+  );
 }
 
 export function LawCardView({ law, resistance, ...c }: Common & { law: LawCard; resistance?: number }) {
@@ -46,17 +51,27 @@ export function LawCardView({ law, resistance, ...c }: Common & { law: LawCard; 
         <span className="card-code">
           {law.code} · {law.year}
         </span>
-        {law.tag === 'military' && <SwordsIcon size={16} />}
-        {law.tag === 'tax' && <TaxIcon size={16} />}
+        {law.tag === 'military' && (
+          <span data-tip="Ustawa wojskowa — Potoccy mają przy niej +3 głosy.">
+            <SwordsIcon size={16} />
+          </span>
+        )}
+        {law.tag === 'tax' && (
+          <span data-tip="Ustawa podatkowa.">
+            <TaxIcon size={16} />
+          </span>
+        )}
       </div>
       <div className="card-title">{law.name}</div>
       <CardArt art={law.art} className="card-art" />
       <div className="card-chips">
-        <Chip tone="blue">
+        <Chip tone="blue" tip={TIP.resistance}>
           opór {law.resistance}
           {resistance !== undefined && resistance !== law.resistance ? ` → ${resistance}` : ''}
         </Chip>
-        <Chip tone="red">tor +{law.track}</Chip>
+        <Chip tone="red" tip={TIP.lawTrack}>
+          tor +{law.track}
+        </Chip>
       </div>
       <div className="card-text">
         {law.immediateText !== '—' && (
@@ -131,7 +146,11 @@ export function GrantCardView({ grant, ...c }: Common & { grant: GrantCard | nul
             <EsteemIcon size={13} /> +{grant.esteem}
           </Chip>
         )}
-        {grant.strength > 0 && <Chip tone="red">+{grant.strength} siły</Chip>}
+        {grant.strength > 0 && (
+          <Chip tone="red" tip="Buława — dodatkowa siła w starciu dla magnata, który ma to nadanie.">
+            +{grant.strength} siły
+          </Chip>
+        )}
       </div>
     </Frame>
   );
@@ -150,19 +169,19 @@ export function BenefitCardView({ card, ...c }: Common & { card: BenefitCard }) 
       <CardArt art={card.art} className="card-art" />
       <div className="card-chips">
         {card.banners > 0 && (
-          <Chip>
+          <Chip tip={`Ukryte chorągwie — siła w starciu, jeśli zaangażujesz tę kartę${card.defenseOnly ? ' (tylko w obronie króla)' : ''}.`}>
             <BannerIcon size={13} color="#4b3a8c" /> {card.banners}
             {card.defenseOnly ? ' w obronie' : ''}
           </Chip>
         )}
         {card.esteem !== 0 && (
-          <Chip tone={card.esteem > 0 ? 'green' : 'red'}>
+          <Chip tone={card.esteem > 0 ? 'green' : 'red'} tip="Estyma — punkty doliczane do wyniku, gdy karta jest zagrana.">
             <EsteemIcon size={13} /> {card.esteem > 0 ? '+' : ''}
             {card.esteem}
           </Chip>
         )}
         {card.reserve > 0 && (
-          <Chip>
+          <Chip tip="Rezerwa — ukryte dukaty: liczą się do fundacji (4 d = 1 Estymy) i do szybkiego zaciągu w starciu.">
             <DucatIcon size={13} /> rezerwa {card.reserve}
           </Chip>
         )}
@@ -187,7 +206,7 @@ export function CardBack({ kind = 'benefit', label, size = 'sm' }: { kind?: 'ben
 
 export function CheckView({ value, size = 'md' }: { value: number; size?: 'sm' | 'md' }) {
   return (
-    <div className={`check check-${size}`}>
+    <div className={`check check-${size}`} data-tip={TIP.check}>
       <div className="check-head">Czek królewski</div>
       <div className="check-value">
         <DucatIcon size={size === 'sm' ? 16 : 22} /> {value}

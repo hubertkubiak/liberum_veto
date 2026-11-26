@@ -5,7 +5,9 @@ import type { GameOptions, GameState, Role } from '../engine/types';
 import { ActionPanel } from './ActionPanel';
 import { Stage } from './Stage';
 import { EraBadge, KingPanel, MagnatePanel, TrackBar } from './Table';
-import { PHASE_HELP, PHASE_STEP, PHASE_TITLE, STEPS } from './text';
+import { BannerIcon, CrownIcon, DeputyIcon, DucatIcon, EsteemIcon, HandIcon, VetoIcon } from '../art/icons';
+import { KING_GUIDE, MAGNATE_GUIDE, TIP, TIPS } from './guide';
+import { PHASE_HELP, PHASE_STEP, PHASE_TITLE, STEPS, roleKind } from './text';
 import { useGame } from './useGame';
 
 export function GameScreen({ opts, onExit }: { opts: GameOptions; onExit: () => void }) {
@@ -51,8 +53,8 @@ function Game({ opts, onExit, onNewGame }: { opts: GameOptions; onExit: () => vo
               <option value={4}>bardzo szybko</option>
             </select>
           )}
-          <button className="btn btn-small" onClick={() => setRules(true)}>
-            Zasady
+          <button className="btn btn-small btn-rules" onClick={() => setRules(true)} data-tip="Cel gry, zasoby, przebieg sejmu i porady dla Twojej roli">
+            Zasady i porady
           </button>
           <button className="btn btn-small btn-ghost" onClick={onExit}>
             Nowa gra
@@ -100,47 +102,172 @@ function Chronicle({ s }: { s: GameState }) {
   );
 }
 
+type RulesTab = 'king' | 'magnate' | 'resources' | 'sejm' | 'win';
+
+const RULE_TABS: { id: RulesTab; label: string }[] = [
+  { id: 'king', label: 'Gra królem' },
+  { id: 'magnate', label: 'Gra magnatem' },
+  { id: 'resources', label: 'Zasoby' },
+  { id: 'sejm', label: 'Przebieg sejmu' },
+  { id: 'win', label: 'Głosowanie i wygrana' },
+];
+
 function RulesModal({ s, onClose }: { s: GameState; onClose: () => void }) {
+  const [tab, setTab] = useState<RulesTab>(s.human && s.human !== 'king' ? 'magnate' : 'king');
+  const tip = s.human ? TIPS[roleKind(s.human)][s.phase] : undefined;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  const isYou = (id: RulesTab) => (id === 'king' && s.human === 'king') || (id === 'magnate' && !!s.human && s.human !== 'king');
+
   return (
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>
           ×
         </button>
-        <h2>Zasady w pigułce</h2>
+        <h2>Zasady i porady</h2>
         <div className="rules-now">
           <b>Teraz: {PHASE_TITLE[s.phase]}.</b> {PHASE_HELP[s.phase]}
+          {tip && (
+            <p className="rules-tip">
+              <b>💡 Rada:</b> {tip}
+            </p>
+          )}
         </div>
-        <h3>Jak się wygrywa</h3>
-        <ul>
-          <li>
-            <b>Złota wolność</b> (po 6. sejmie): pole króla na torze kontra najwyższa Estyma magnata. Remis wygrywa magnat.
-          </li>
-          <li>
-            <b>Udany zamach</b> — wygrywa król. <b>Przegrany zamach</b> — gra kończy się od razu, król ostatni.
-          </li>
-          <li>
-            <b>Udany rokosz</b> — magnat obala króla i wygrywa. Przegrani rokoszanie odpadają.
-          </li>
-        </ul>
-        <h3>Sejm krok po kroku</h3>
-        <ol>
-          {STEPS.map((st, i) => (
-            <li key={st}>
-              <b>{st}.</b>{' '}
-              {PHASE_HELP[(['income', 'agenda', 'draft1', 'offers', 'negotiation', 'voting', 'settlement', 'muster'] as const)[i]]}
-            </li>
+        <div className="rules-tabs">
+          {RULE_TABS.map((t) => (
+            <button key={t.id} className={`rules-tab ${tab === t.id ? 'is-on' : ''}`} onClick={() => setTab(t.id)}>
+              {t.label}
+              {isYou(t.id) && <span className="you">Ty</span>}
+            </button>
           ))}
-        </ol>
-        <h3>Głosowanie</h3>
-        <p>
-          <span className="za-t">ZA</span> &gt; <span className="przeciw-t">PRZECIW</span> + <span className="opor-t">OPÓR</span> → ustawa
-          przechodzi. Weto kosztuje 5 d (+2 za każde wcześniejsze w epoce), zrywacz oddaje 3 posłów do puli, a król bierze posła za każdą zerwaną
-          ustawę.
-        </p>
-        <h3>Wynik magnata</h3>
-        <p>3 + znaczniki Estymy + Estyma z kart + Estyma z nadań + fundacje (niewydane dukaty i rezerwy, 4 d = 1).</p>
+        </div>
+        <div className="rules-body">
+          {tab === 'king' && <RoleGuide g={KING_GUIDE} />}
+          {tab === 'magnate' && (
+            <>
+              <RoleGuide g={MAGNATE_GUIDE} />
+              <h3>Zdolności rodów</h3>
+              <ul className="houses-list">
+                {s.houses.map((h) => (
+                  <li key={h} className={s.human === h ? 'is-you' : ''}>
+                    <Coat role={h} size={20} /> <b>{HOUSES[h].name}</b> — {HOUSES[h].ability}: {HOUSES[h].abilityText}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {tab === 'resources' && <Resources />}
+          {tab === 'sejm' && (
+            <>
+              <p>Gra trwa 6 sejmów w 3 epokach (po 2 sejmy). Każdy sejm to 8 kroków:</p>
+              <ol>
+                {STEPS.map((st, i) => (
+                  <li key={st}>
+                    <b>{st}.</b>{' '}
+                    {PHASE_HELP[(['income', 'agenda', 'draft1', 'offers', 'negotiation', 'voting', 'settlement', 'muster'] as const)[i]]}
+                  </li>
+                ))}
+              </ol>
+              <p>
+                <b>Draft</b> odbywa się tylko w pierwszym sejmie epoki. <b>Od 3. sejmu</b> po zaciągu może wybuchnąć rokosz albo zamach. Po
+                sejmach 2 i 4 — <b>koniec epoki</b>: żołd za wojsko i przepadają niezagrane karty.
+              </p>
+              <h3>Starcie (rokosz / zamach)</h3>
+              <p>{PHASE_HELP.conflictCommit}</p>
+              <p>{PHASE_HELP.conflictResult}</p>
+            </>
+          )}
+          {tab === 'win' && (
+            <>
+              <h3>Jak się wygrywa</h3>
+              <ul>
+                <li>
+                  <b>Złota wolność</b> (po 6. sejmie): pole króla na torze kontra najwyższa Estyma magnata. Remis wygrywa magnat.
+                </li>
+                <li>
+                  <b>Udany zamach</b> — wygrywa król. <b>Przegrany zamach</b> — gra kończy się od razu, król ostatni.
+                </li>
+                <li>
+                  <b>Udany rokosz</b> — wygrywa najsilniejszy z rokoszan. Przegrani rokoszanie odpadają.
+                </li>
+              </ul>
+              <h3>Głosowanie</h3>
+              <p>
+                <span className="za-t">ZA</span> &gt; <span className="przeciw-t">PRZECIW</span> + <span className="opor-t">OPÓR</span> → ustawa
+                przechodzi. Remis — upada. Posłowie króla zawsze głosują ZA; każdy ród głosuje wszystkimi posłami naraz.
+              </p>
+              <p>
+                <b>Oferta</b> działa jak umowa: magnat, który ani razu nie zagłosuje przeciw, bierze nadanie i czek (i odrzuca kartę korzyści). Kto
+                choć raz zagłosuje przeciw, oddaje ofertę i zagrywa kartę korzyści.
+              </p>
+              <p>
+                <b>Weto</b> zrywa cały sejm. Kosztuje 5 d (+2 za każde wcześniejsze w epoce), zrywacz oddaje 3 posłów do puli, a król bierze posła
+                za każdą zerwaną ustawę. Ustawy z oporem ≥ 12 dają zrywaczowi +1 Estymy.
+              </p>
+              <h3>Wynik magnata</h3>
+              <p>3 + znaczniki Estymy + Estyma z kart + Estyma z nadań + fundacje (niewydane dukaty i rezerwy, 4 d = 1).</p>
+            </>
+          )}
+        </div>
       </div>
     </div>
+  );
+}
+
+function RoleGuide({ g }: { g: typeof KING_GUIDE }) {
+  return (
+    <>
+      <h3>Twój cel</h3>
+      <p className="guide-goal">{g.goal}</p>
+      <h3>Jak to działa</h3>
+      <ul>
+        {g.how.map((x) => (
+          <li key={x}>{x}</li>
+        ))}
+      </ul>
+      <h3>Główny dylemat</h3>
+      <p className="guide-dilemma">{g.dilemma}</p>
+      <h3>Wskazówki</h3>
+      <ul>
+        {g.tips.map((x) => (
+          <li key={x}>{x}</li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+function Resources() {
+  const rows: { icon: React.ReactNode; name: string; text: string }[] = [
+    { icon: <DeputyIcon size={22} />, name: 'Posłowie magnata', text: TIP.deputies },
+    { icon: <DeputyIcon size={22} />, name: 'Posłowie króla', text: TIP.kingDeputies },
+    { icon: <BannerIcon size={22} />, name: 'Chorągwie', text: `${TIP.banners} Król: ${TIP.kingBanners}` },
+    { icon: <DucatIcon size={22} />, name: 'Dukaty', text: `${TIP.ducats} Król: ${TIP.kingDucats}` },
+    { icon: <EsteemIcon size={22} />, name: 'Estyma', text: TIP.esteem },
+    { icon: <CrownIcon size={22} />, name: 'Tor absolutyzmu', text: `${TIP.kingTrack} ${TIP.track}` },
+    { icon: <HandIcon size={22} />, name: 'Nadania', text: `${TIP.kingGrants} ${TIP.court}` },
+    { icon: <DucatIcon size={22} />, name: 'Czeki', text: `${TIP.check} Wartości 0–10, każda tylko raz na sejm.` },
+    { icon: <HandIcon size={22} />, name: 'Karty korzyści', text: TIP.hand },
+    {
+      icon: <VetoIcon size={22} />,
+      name: 'Weto',
+      text: 'Karta weta zrywa cały sejm: ustawy przepadają, oferty wracają do króla, a każdy magnat zagrywa kartę korzyści.',
+    },
+  ];
+  return (
+    <dl className="resources">
+      {rows.map((r) => (
+        <div key={r.name} className="res-row">
+          <dt>
+            {r.icon} {r.name}
+          </dt>
+          <dd>{r.text}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
