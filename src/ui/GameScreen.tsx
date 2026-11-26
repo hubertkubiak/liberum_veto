@@ -102,14 +102,15 @@ function Chronicle({ s }: { s: GameState }) {
   );
 }
 
-type RulesTab = 'king' | 'magnate' | 'resources' | 'sejm' | 'win';
+type RulesTab = 'king' | 'magnate' | 'resources' | 'sejm' | 'win' | 'end';
 
 const RULE_TABS: { id: RulesTab; label: string }[] = [
   { id: 'king', label: 'Gra królem' },
   { id: 'magnate', label: 'Gra magnatem' },
   { id: 'resources', label: 'Zasoby' },
   { id: 'sejm', label: 'Przebieg sejmu' },
-  { id: 'win', label: 'Głosowanie i wygrana' },
+  { id: 'win', label: 'Głosowanie' },
+  { id: 'end', label: 'Koniec gry' },
 ];
 
 function RulesModal({ s, onClose }: { s: GameState; onClose: () => void }) {
@@ -181,20 +182,9 @@ function RulesModal({ s, onClose }: { s: GameState; onClose: () => void }) {
               <p>{PHASE_HELP.conflictResult}</p>
             </>
           )}
+          {tab === 'end' && <EndConditions s={s} />}
           {tab === 'win' && (
             <>
-              <h3>Jak się wygrywa</h3>
-              <ul>
-                <li>
-                  <b>Złota wolność</b> (po 6. sejmie): pole króla na torze kontra najwyższa Estyma magnata. Remis wygrywa magnat.
-                </li>
-                <li>
-                  <b>Udany zamach</b> — wygrywa król. <b>Przegrany zamach</b> — gra kończy się od razu, król ostatni.
-                </li>
-                <li>
-                  <b>Udany rokosz</b> — wygrywa najsilniejszy z rokoszan. Przegrani rokoszanie odpadają.
-                </li>
-              </ul>
               <h3>Głosowanie</h3>
               <p>
                 <span className="za-t">ZA</span> &gt; <span className="przeciw-t">PRZECIW</span> + <span className="opor-t">OPÓR</span> → ustawa
@@ -208,13 +198,130 @@ function RulesModal({ s, onClose }: { s: GameState; onClose: () => void }) {
                 <b>Weto</b> zrywa cały sejm. Kosztuje 5 d (+2 za każde wcześniejsze w epoce), zrywacz oddaje 3 posłów do puli, a król bierze posła
                 za każdą zerwaną ustawę. Ustawy z oporem ≥ 12 dają zrywaczowi +1 Estymy.
               </p>
-              <h3>Wynik magnata</h3>
-              <p>3 + znaczniki Estymy + Estyma z kart + Estyma z nadań + fundacje (niewydane dukaty i rezerwy, 4 d = 1).</p>
             </>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+function EndConditions({ s }: { s: GameState }) {
+  const sejmsLeft = Math.max(0, 6 - s.sejm);
+  return (
+    <>
+      <p className="guide-goal">
+        Gra kończy się na jeden z trzech sposobów: <b>po 6. sejmie</b> (złota wolność), <b>zamachem króla</b> albo <b>zwycięskim rokoszem</b>.
+        Teraz trwa sejm {s.sejm} z 6{sejmsLeft > 0 ? ` — zostało jeszcze ${sejmsLeft}` : ' — to ostatni sejm'}.
+        {s.rokoszUsed ? ' Rokosz został już wykorzystany w tej grze.' : ''}
+      </p>
+
+      <div className="end-cards">
+        <div className="end-card">
+          <div className="end-head">
+            <EsteemIcon size={24} /> 1. Złota wolność — koniec po 6. sejmie
+          </div>
+          <p>
+            <b>Kiedy:</b> po zakończeniu 6. sejmu — o ile król nie ogłosi wcześniej zamachu (może to zrobić jeszcze po zaciągu w 6. sejmie).
+          </p>
+          <p>
+            <b>Kto wygrywa:</b> porównuje się <b>pole króla na torze absolutyzmu</b> z <b>Estymą każdego magnata</b>. Wygrywa najwyższy wynik.
+          </p>
+          <ul>
+            <li>Estyma magnata = 3 + znaczniki Estymy + Estyma z zagranych kart + Estyma z nadań + fundacje (niewydane dukaty i rezerwy z kart, 4 d = 1).</li>
+            <li>
+              <b>Remis króla z magnatem wygrywa magnat.</b> Król musi mieć wynik <i>wyższy</i> od najlepszego magnata.
+            </li>
+            <li>Remis między magnatami: wyżej ten, kto ma mniej nadań od króla (mniej „sprzedał się” dworowi).</li>
+          </ul>
+        </div>
+
+        <div className="end-card">
+          <div className="end-head">
+            <CrownIcon size={24} /> 2. Zamach stanu (król)
+          </div>
+          <p>
+            <b>Kiedy:</b> po zaciągu w każdym sejmie od <b>3. do 6.</b> Tylko jeśli w tym samym sejmie żaden magnat nie ogłosił rokoszu (rokosz ma
+            pierwszeństwo).
+          </p>
+          <p>
+            <b>Jak:</b> król atakuje wszystkich magnatów naraz. Siła króla + k6 kontra łączna siła magnatów + k6.
+          </p>
+          <ul>
+            <li>
+              <b>Zamach udany</b> → gra kończy się natychmiast, <b>wygrywa król</b> (absolutum dominium). Magnaci są uszeregowani według Estymy.
+            </li>
+            <li>
+              <b>Zamach nieudany</b> → gra kończy się natychmiast, <b>król zajmuje ostatnie miejsce</b>, wygrywa magnat z najwyższą Estymą.
+            </li>
+          </ul>
+        </div>
+
+        <div className="end-card">
+          <div className="end-head">
+            <BannerIcon size={24} /> 3. Rokosz (magnat)
+          </div>
+          <p>
+            <b>Kiedy:</b> po zaciągu w sejmach <b>3.–5.</b>, <b>tylko raz na całą grę</b> (dla wszystkich magnatów łącznie). Gdy kilku chce naraz —
+            losuje się inicjatora.
+          </p>
+          <p>
+            <b>Jak:</b> pozostali magnaci wybierają: przyłączają się, bronią króla (tylko stronnicy dworu, −1 Estymy) albo zachowują neutralność.
+            Siła rokoszan (inicjator +3, posłowie 3 = 1) + k6 kontra siła króla i obrońców + k6.
+          </p>
+          <ul>
+            <li>
+              <b>Rokosz udany</b> → gra kończy się natychmiast, <b>wygrywa rokoszanin z największą siłą</b> w starciu (przy remisie inicjator). Król
+              ostatni.
+            </li>
+            <li>
+              <b>Rokosz nieudany</b> → gra <b>toczy się dalej</b>, ale wszyscy rokoszanie <b>odpadają</b>: tracą wszystko, ich posłowie wracają do
+              puli, a w końcowej klasyfikacji są na samym dole. Jeśli odpadną wszyscy magnaci — wygrywa król.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Oś czasu</h3>
+      <table className="end-timeline">
+        <thead>
+          <tr>
+            <th>Sejm</th>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <th key={i} className={i === s.sejm ? 'now' : ''}>
+                {i}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Rokosz</td>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <td key={i} className={i >= 3 && i <= 5 ? (s.rokoszUsed ? 'used' : 'yes') : ''}>
+                {i >= 3 && i <= 5 ? (s.rokoszUsed ? '✗' : '✓') : '—'}
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <td>Zamach</td>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <td key={i} className={i >= 3 ? 'yes' : ''}>
+                {i >= 3 ? '✓' : '—'}
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <td>Liczenie punktów</td>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <td key={i} className={i === 6 ? 'yes' : ''}>
+                {i === 6 ? '★' : ''}
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+    </>
   );
 }
 
