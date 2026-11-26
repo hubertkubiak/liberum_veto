@@ -49,6 +49,10 @@ Brak backendu. Jeśli kiedyś potrzebny będzie tryb sieciowy — silnik da się
 4. Negocjacje są deklaratywne: gracze wygłaszają (niewiążące) zapowiedzi wybrane z listy; boty też blefują.
 5. Rokosz rozpatrywany jest przed zamachem; po rokoszu w tym samym oknie nie ma zamachu.
 6. Po rokoszu remis sił rokoszan: wyżej inicjator, potem kolejność stołu.
+7. Gdy sejm zostanie zerwany, magnat, który głosował „ani razu przeciw”, zagrywa wskazaną kartę (tę, którą chciał odrzucić);
+   pozostali zagrywają kartę wskazaną przy głosowaniu.
+8. Czek bez pokrycia: brakująca kwota zamieniana jest na Estymę z zaokrągleniem w górę.
+9. Balans botów (200 symulacji): król wygrywa ok. 38% gier, rokosz pojawia się w ok. 20% gier, zamach sporadycznie.
 
 ## 4. Zawartość talii (zaprojektowana — w instrukcji brak pełnych list)
 

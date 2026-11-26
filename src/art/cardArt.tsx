@@ -141,7 +141,7 @@ function Columns({ x, y, s = 1 }: XY) {
 }
 
 const EAGLE_BODY =
-  'M0 -6c-4 -3 -10 -8 -20 -8c3 3 4 5 3 8c-3 0 -6 1 -8 4c4 0 6 2 7 4c-3 1 -4 3 -4 5c6 -1 11 1 15 5l-3 10c-2 0 -4 1 -5 3h6l3 -3 2 4 2 -4 3 3h6c-1 -2 -3 -3 -5 -3l-3 -10c4 -4 9 -6 15 -5c0 -2 -1 -4 -4 -5c1 -2 3 -4 7 -4c-2 -3 -5 -4 -8 -4c-1 -3 0 -5 3 -8c-10 0 -16 5 -20 8z';
+  'M-4 -4L-12 -18L-19 -20L-22 -14L-20 -12L-25 -8L-22 -6L-26 -2L-21 0L-23 4L-16 3L-8 5L-5 7C-6 10 -5 12 -5 12L-8 20L-3 18L0 22L3 18L8 20L5 12C5 12 6 10 5 7L8 5L16 3L23 4L21 0L26 -2L22 -6L25 -8L20 -12L22 -14L19 -20L12 -18L4 -4C3 -6 -3 -6 -4 -4Z';
 
 function Eagle({ x, y, s = 1, color = '#f7f4ec', double = false, crown = true, beak = GOLD }: XY & { color?: string; double?: boolean; crown?: boolean; beak?: string }) {
   const stroke = color === '#f7f4ec' ? '#b5ab98' : '#000';
