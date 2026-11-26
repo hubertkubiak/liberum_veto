@@ -3,7 +3,7 @@ import { BannerIcon, CrownIcon, DeputyIcon, DucatIcon, EsteemIcon, HandIcon, Vet
 import { COURT_THRESHOLDS, ERA_NAMES, HOUSES, TRACK_MAX } from '../engine/data';
 import { isCourtier, magnateScore, trackStrengthDiv } from '../engine/rules';
 import type { GameState, HouseId, Role } from '../engine/types';
-import { BenefitCardView, CardBack, CheckView, GrantCardView } from './Cards';
+import { BenefitMini, CardBack, CheckView, GrantCardView } from './Cards';
 
 export type Sees = (r: Role) => boolean;
 
@@ -90,7 +90,7 @@ export function MagnatePanel({ s, h, sees }: { s: GameState; h: HouseId; sees: S
           <div className="cards-row">
             <span className="row-label">zagrane</span>
             {m.played.map((c) =>
-              visible ? <BenefitCardView key={c.id} card={c} size="sm" /> : <CardBack key={c.id} size="xs" />,
+              visible ? <BenefitMini key={c.id} card={c} /> : <CardBack key={c.id} size="xs" />,
             )}
           </div>
         )}
@@ -98,7 +98,7 @@ export function MagnatePanel({ s, h, sees }: { s: GameState; h: HouseId; sees: S
           <div className="cards-row">
             <span className="row-label">ręka</span>
             {m.hand.map((c) => (
-              <BenefitCardView key={c.id} card={c} size="sm" />
+              <BenefitMini key={c.id} card={c} />
             ))}
           </div>
         )}

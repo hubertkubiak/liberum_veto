@@ -113,7 +113,7 @@ function kingOffers(s: GameState, r: () => number): Decision {
   for (const p of plan) {
     let check = checks.filter((c) => !used.has(c) && c <= p.ideal && spent + c <= budget)[0];
     if (check === undefined) check = [...checks].reverse().find((c) => !used.has(c) && spent + c <= budget) ?? 0;
-    if (used.has(check)) check = checks.find((c) => !used.has(c))!;
+    if (used.has(check)) check = [...checks].reverse().find((c) => !used.has(c))!;
     used.add(check);
     spent += check;
     const grant = p.target && grants.length ? grants.shift()! : !p.target && grants.length > 3 && r() < 0.4 ? grants.pop()! : null;
@@ -165,7 +165,7 @@ function magnatePlan(s: GameState, h: HouseId) {
   });
   const blockBonus = Math.max(...blockChance) * 1.0;
 
-  const acceptScore = offerValue - acceptCost + t.greed * 1.6 + (r() - 0.5) * 1.5;
+  const acceptScore = offerValue - acceptCost + t.greed * 0.8 + (r() - 0.5) * 1.5;
   const rejectScore = rejectGain + blockBonus + Math.max(0, kingThreat) * 1.2 + (1 - t.greed) * 0.6;
   const accept = acceptScore > rejectScore;
 
@@ -286,16 +286,19 @@ function declare(s: GameState, role: Role, r: () => number): Decision {
     const chance = attackChance(Math.round(mine - theirs));
     const best = Math.max(...act.map((h) => guessEsteem(mag(s, h))));
     const losing = s.sejm === 6 && s.king.track <= best;
-    const need = losing ? 0.45 : 0.8 - t.boldness * 0.1;
+    const need = losing ? 0.35 : 0.72 - t.boldness * 0.15;
     return { kind: 'declare', declare: chance >= need && r() < 0.85 };
   }
   const h = role as HouseId;
   const mine = strength(s, h, fullCommit(s, h, false), { rokoszanin: true }).total + 3;
   const king = strength(s, 'king', fullCommit(s, 'king', false)).total;
   const courtiers = act.filter((x) => x !== h && isCourtier(mag(s, x)));
-  const defenders = king + courtiers.reduce((a, x) => a + estMagnateStrength(s, x, true), 0) * 0.8 + 2;
+  const defenders = king + courtiers.reduce((a, x) => a + estMagnateStrength(s, x, true), 0) * 0.3;
   const chance = attackChance(Math.round(mine - defenders));
-  return { kind: 'declare', declare: chance >= 0.88 - t.boldness * 0.08 && r() < 0.5 };
+  // Last chance for a rokosz: a magnate trailing the king may gamble.
+  const trailing = s.sejm === 5 && s.king.track > magnateScore(mag(s, h)).total + 2;
+  if (trailing && chance >= 0.3 && r() < 0.35 + t.boldness * 0.3) return { kind: 'declare', declare: true };
+  return { kind: 'declare', declare: chance >= 0.62 - t.boldness * 0.1 && r() < 0.6 };
 }
 
 function side(s: GameState, h: HouseId, r: () => number): Decision {

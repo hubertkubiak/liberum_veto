@@ -43,7 +43,7 @@ describe('engine', () => {
     
     console.log('winners', winners, 'reasons', reasons);
     expect(winners.king ?? 0).toBeGreaterThan(20);
-    expect(reasons.rokoszWon ?? 0).toBeLessThan(30);
+    expect(reasons.rokoszWon ?? 0).toBeLessThan(50);
     expect(winners.magnate ?? 0).toBeGreaterThan(20);
   }, 120_000);
 });

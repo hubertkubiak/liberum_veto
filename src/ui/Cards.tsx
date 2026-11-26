@@ -196,3 +196,37 @@ export function CheckView({ value, size = 'md' }: { value: number; size?: 'sm' |
     </div>
   );
 }
+
+/** Compact benefit card for player panels. */
+export function BenefitMini({ card }: { card: BenefitCard }) {
+  return (
+    <div className={`mini mini-${card.faction}`} title={`${FACTION_NAMES[card.faction]}${card.court ? ' · ' + card.court : ''}`}>
+      <CardArt art={card.art} className="mini-art" />
+      <div className="mini-body">
+        <div className="mini-name">{card.name}</div>
+        <div className="mini-stats">
+          {card.banners > 0 && (
+            <span>
+              <BannerIcon size={11} color="#4b3a8c" />
+              {card.banners}
+              {card.defenseOnly ? '*' : ''}
+            </span>
+          )}
+          {card.esteem !== 0 && (
+            <span className={card.esteem > 0 ? 'pos' : 'neg'}>
+              <EsteemIcon size={11} />
+              {card.esteem > 0 ? '+' : ''}
+              {card.esteem}
+            </span>
+          )}
+          {card.reserve > 0 && (
+            <span>
+              <DucatIcon size={11} />
+              {card.reserve}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -541,3 +541,15 @@ h1, h2, h3 { font-family: var(--serif); margin: 0; }
   .role-grid { grid-template-columns: repeat(3, 1fr); }
   .how-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* mini benefit cards in panels */
+.mini { --edge: var(--purple); display: flex; gap: 5px; align-items: center; width: 150px; background: #fffaf0; border: 1.5px solid var(--edge); border-left-width: 5px; border-radius: 6px; padding: 2px 4px 2px 2px; animation: dealIn 0.3s both; }
+.mini-nobility { --edge: var(--blue); }
+.mini-mixed { --edge: var(--teal); }
+.mini-art { width: 40px; height: 26px; border-radius: 3px; flex: none; }
+.mini-body { min-width: 0; }
+.mini-name { font-size: 11px; font-weight: 700; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-stats { display: flex; gap: 5px; font-size: 11px; font-weight: 700; }
+.mini-stats span { display: inline-flex; align-items: center; gap: 1px; }
+.mini-stats .pos { color: var(--green); }
+.mini-stats .neg { color: var(--red-2); }

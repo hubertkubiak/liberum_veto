@@ -513,7 +513,7 @@ function settle(s: GameState) {
       }
       s.directives.push(law);
       moveTrack(law.track);
-      log(s, `Ustawa ${law.name} przyjęta: król +${law.track} na torze. ${law.immediateText !== '—' ? law.immediateText + '.' : ''}`, 'drama', 'king');
+      log(s, `${law.code} ${law.name} przyjęta: król +${law.track} na torze. ${law.immediateText !== '—' ? law.immediateText + '.' : ''}`, 'drama', 'king');
     });
     // 2. failed laws
     const failed = rv.tallies.filter((t) => !t.passed).length;
