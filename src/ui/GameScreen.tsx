@@ -353,6 +353,7 @@ function Resources() {
     { icon: <DeputyIcon size={22} />, name: 'Posłowie magnata', text: TIP.deputies },
     { icon: <DeputyIcon size={22} />, name: 'Posłowie króla', text: TIP.kingDeputies },
     { icon: <BannerIcon size={22} />, name: 'Chorągwie', text: `${TIP.banners} Król: ${TIP.kingBanners}` },
+    { icon: <BannerIcon size={22} color="#4b3a8c" />, name: 'Chorągwie ukryte', text: TIP.hiddenBanners },
     { icon: <DucatIcon size={22} />, name: 'Dukaty', text: `${TIP.ducats} Król: ${TIP.kingDucats}` },
     { icon: <EsteemIcon size={22} />, name: 'Estyma', text: TIP.esteem },
     { icon: <CrownIcon size={22} />, name: 'Tor absolutyzmu', text: `${TIP.kingTrack} ${TIP.track}` },

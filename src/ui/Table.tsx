@@ -2,11 +2,18 @@ import { Coat } from '../art/heraldry';
 import { BannerIcon, CrownIcon, DeputyIcon, DucatIcon, EsteemIcon, HandIcon, VetoIcon } from '../art/icons';
 import { COURT_THRESHOLDS, ERA_NAMES, HOUSES, TRACK_MAX } from '../engine/data';
 import { isCourtier, magnateScore, publicEsteem, trackStrengthDiv } from '../engine/rules';
-import type { GameState, HouseId, Role } from '../engine/types';
+import type { GameState, HouseId, MagnateState, Role } from '../engine/types';
 import { BenefitMini, CardBack, CheckView, GrantCardView } from './Cards';
 import { TIP } from './guide';
 
 export type Sees = (r: Role) => boolean;
+
+/** Hidden banners on played benefit cards; defence-only ones shown as "+N". */
+function hiddenBanners(m: MagnateState): string {
+  const attack = m.played.filter((c) => !c.defenseOnly).reduce((a, c) => a + c.banners, 0);
+  const defense = m.played.filter((c) => c.defenseOnly).reduce((a, c) => a + c.banners, 0);
+  return defense ? `${attack}+${defense}` : String(attack);
+}
 
 function Stat({ icon, value, title, tip, hidden }: { icon: React.ReactNode; value: React.ReactNode; title: string; tip: string; hidden?: boolean }) {
   return (
@@ -71,6 +78,13 @@ export function MagnatePanel({ s, h, sees }: { s: GameState; h: HouseId; sees: S
       <div className="stats">
         <Stat icon={<DeputyIcon size={18} />} value={m.deputies} title="Posłowie" tip={TIP.deputies} />
         <Stat icon={<BannerIcon size={18} color={info.color} />} value={m.banners} title="Chorągwie jawne" tip={TIP.banners} />
+        <Stat
+          icon={<BannerIcon size={18} color="#4b3a8c" />}
+          value={hiddenBanners(m)}
+          title="Chorągwie ukryte"
+          tip={TIP.hiddenBanners}
+          hidden={!visible}
+        />
         <Stat icon={<DucatIcon size={18} />} value={m.ducats} title="Dukaty" tip={TIP.ducats} hidden={!visible} />
         {visible ? (
           <Stat icon={<EsteemIcon size={18} />} value={magnateScore(m).total} title="Estyma" tip={TIP.esteem} />
@@ -99,7 +113,7 @@ export function MagnatePanel({ s, h, sees }: { s: GameState; h: HouseId; sees: S
             )}
           </div>
         )}
-        {visible && m.hand.length > 0 && s.human !== h && (
+        {visible && m.hand.length > 0 && (
           <div className="cards-row">
             <span className="row-label">ręka</span>
             {m.hand.map((c) => (
@@ -183,7 +197,7 @@ export function KingPanel({ s, sees }: { s: GameState; sees: Sees }) {
         ))}
         <span className="thr-label" data-tip={TIP.thresholds}>progi stronnictwa ⓘ</span>
       </div>
-      {visible && k.grantHand.length > 0 && s.human !== 'king' && (
+      {visible && k.grantHand.length > 0 && (
         <div className="grants">
           {k.grantHand.map((g) => (
             <span key={g.id} className="grant-tag">

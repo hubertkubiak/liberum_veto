@@ -6,6 +6,8 @@ export const TIP = {
     'Posłowie — głosy w sejmie. Wszyscy posłowie rodu głosują razem: ZA albo PRZECIW. W starciu 5 posłów = 1 siły (rokoszanie: 3 = 1).',
   banners:
     'Chorągwie jawne — wojsko. Liczą się tylko w starciu (rokosz / zamach): 1 chorągiew = 1 siły. Nie dają punktów, a na koniec epoki trzeba płacić żołd (1 d za każde 2). Odstraszają króla od zamachu.',
+  hiddenBanners:
+    'Chorągwie ukryte — wojsko z zagranych kart korzyści (zakryte przed innymi). Liczą się w starciu tylko wtedy, gdy zaangażujesz kartę. Zapis „3+2” oznacza 3 chorągwie zawsze i 2 tylko w obronie króla. Uwaga: zaangażowane karty przepadają po starciu razem z ich Estymą.',
   ducats:
     'Dukaty — ukryte za zasłonką. Płacisz nimi za weto, zaciąg i żołd. Niewydane na koniec gry stają się fundacjami: 4 d = 1 Estymy.',
   esteem:
