@@ -2,11 +2,27 @@ import { Coat } from '../art/heraldry';
 import { BannerIcon, CrownIcon, DeputyIcon, DucatIcon, EsteemIcon, HandIcon, VetoIcon } from '../art/icons';
 import { COURT_THRESHOLDS, ERA_NAMES, HOUSES, TRACK_MAX } from '../engine/data';
 import { isCourtier, magnateScore, publicEsteem, trackStrengthDiv } from '../engine/rules';
-import type { GameState, HouseId, MagnateState, Role } from '../engine/types';
+import type { GameState, GrantCard, HouseId, MagnateState, Role } from '../engine/types';
 import { BenefitMini, CardBack, CheckView, GrantCardView } from './Cards';
 import { TIP } from './guide';
 
 export type Sees = (r: Role) => boolean;
+
+function grantText(g: GrantCard): string {
+  const parts = [
+    g.deputies && `+${g.deputies} posłów`,
+    g.banners && `+${g.banners} chorągwi`,
+    g.ducats && `+${g.ducats} dukatów`,
+    g.esteem && `+${g.esteem} Estymy`,
+    g.strength && `+${g.strength} siły w starciu`,
+  ].filter(Boolean);
+  return `${g.name}: ${parts.join(', ')}.`;
+}
+
+function esteemBreakdown(m: MagnateState): string {
+  const b = magnateScore(m);
+  return `Teraz: 3 bazowo + ${b.tokens} ze znaczników + ${b.cards} z kart + ${b.grants} z nadań + ${b.foundations} z fundacji = ${b.total}.`;
+}
 
 /** Hidden banners on played benefit cards; defence-only ones shown as "+N". */
 function hiddenBanners(m: MagnateState): string {
@@ -87,7 +103,7 @@ export function MagnatePanel({ s, h, sees }: { s: GameState; h: HouseId; sees: S
         />
         <Stat icon={<DucatIcon size={18} />} value={m.ducats} title="Dukaty" tip={TIP.ducats} hidden={!visible} />
         {visible ? (
-          <Stat icon={<EsteemIcon size={18} />} value={magnateScore(m).total} title="Estyma" tip={TIP.esteem} />
+          <Stat icon={<EsteemIcon size={18} />} value={magnateScore(m).total} title="Estyma" tip={`${TIP.esteem} ${esteemBreakdown(m)}`} />
         ) : (
           <Stat icon={<EsteemIcon size={18} />} value={`≥${publicEsteem(m)}`} title="Estyma" tip={`${TIP.publicEsteem} ${TIP.esteem}`} />
         )}
@@ -97,7 +113,7 @@ export function MagnatePanel({ s, h, sees }: { s: GameState; h: HouseId; sees: S
       {m.grants.length > 0 && (
         <div className="grants">
           {m.grants.map((g) => (
-            <span key={g.id} className="grant-tag" data-tip={`${g.name}: +${g.deputies} posłów, +${g.banners} chorągwi, +${g.esteem} Estymy${g.strength ? `, +${g.strength} siły w starciu` : ''}. ${TIP.grant}`}>
+            <span key={g.id} className="grant-tag" data-tip={`${grantText(g)} ${TIP.grant}`}>
               {g.name}
             </span>
           ))}
@@ -200,7 +216,7 @@ export function KingPanel({ s, sees }: { s: GameState; sees: Sees }) {
       {visible && k.grantHand.length > 0 && (
         <div className="grants">
           {k.grantHand.map((g) => (
-            <span key={g.id} className="grant-tag">
+            <span key={g.id} className="grant-tag" data-tip={grantText(g)}>
               {g.name}
             </span>
           ))}

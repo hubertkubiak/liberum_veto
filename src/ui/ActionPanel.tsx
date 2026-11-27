@@ -8,9 +8,12 @@ import {
   attackChance,
   effectiveResistance,
   isCourtier,
+  kingUpkeepPer,
   mag,
+  magnateScore,
   maxMuster,
   musterCost,
+  musterRates,
   publicEsteem,
   strength,
   supportNeeded,
@@ -359,6 +362,7 @@ function VoteDecisionView({ s, h, act }: { s: GameState; h: HouseId; act: (d: De
               ? 'Ani razu przeciw → PRZYJMUJESZ ofertę: nadanie jawnie przed sobą, dukaty z czeku, odrzucasz 1 kartę korzyści.'
               : 'Choć raz przeciw → ODRZUCASZ ofertę: zagrywasz 1 kartę korzyści; jeśli ustawa upadnie — premia za blokadę.'}
           </div>
+          <VoteBalance s={s} h={h} cardId={card} veto={veto && canVeto} accept={accept} />
           {m.hand.length > 0 && (
             <div className="card-pick">
               <span>{accept ? 'Karta do odrzucenia:' : 'Karta do zagrania:'}</span>
@@ -381,6 +385,53 @@ function VoteDecisionView({ s, h, act }: { s: GameState; h: HouseId; act: (d: De
       <button className="btn btn-primary" onClick={() => act({ kind: 'vote', vote: { votes, veto: veto && canVeto, cardId: card } })}>
         Połóż zakryte głosy
       </button>
+    </div>
+  );
+}
+
+/** Concrete comparison of accepting vs rejecting the king's offer. */
+function VoteBalance({ s, h, cardId, veto, accept }: { s: GameState; h: HouseId; cardId: string | null; veto: boolean; accept: boolean }) {
+  const m = mag(s, h);
+  const offer = s.offers[h]!;
+  const now = magnateScore(m).total;
+  const vetoCostNow = veto ? vetoCost(s, h) : 0;
+  const g = offer.grant;
+  const ifAccept = magnateScore({
+    ...m,
+    grants: g ? [...m.grants, g] : m.grants,
+    ducats: m.ducats + offer.check + (g?.ducats ?? 0) - vetoCostNow,
+  }).total;
+  const card = m.hand.find((c) => c.id === cardId);
+  const ifReject = magnateScore({ ...m, played: card ? [...m.played, card] : m.played, ducats: m.ducats - vetoCostNow }).total;
+  const kingGain = s.agenda.reduce((a, l) => a + l.track, 0) + 1;
+  return (
+    <div className="balance">
+      <div className={`balance-col ${accept && !veto ? 'is-on' : ''}`}>
+        <b>Przyjmujesz (ZA + ZA)</b>
+        <span>
+          Twoja Estyma: {now} → <b>{ifAccept}</b>
+        </span>
+        <small>
+          {g ? `${g.name} (+${g.esteem} E${g.deputies ? `, +${g.deputies} posłów` : ''}${g.banners ? `, +${g.banners} ch.` : ''})` : 'bez nadania'} i czek{' '}
+          {offer.check} d (4 d = 1 E)
+        </small>
+      </div>
+      <div className={`balance-col ${!accept && !veto ? 'is-on' : ''}`}>
+        <b>Odrzucasz (choć raz PRZECIW)</b>
+        <span>
+          Twoja Estyma: {now} → <b>{ifReject}</b>
+          {!veto && ' (+1, jeśli zablokujesz ustawę)'}
+        </span>
+        <small>{card ? `zagrywasz: ${card.name}` : 'brak karty do zagrania'}</small>
+      </div>
+      <div className="balance-col king">
+        <b>Król</b>
+        <span>
+          tor {s.king.track} → do <b>{s.king.track + kingGain}</b>
+        </span>
+        <small>jeśli obie ustawy przejdą (+{kingGain - 1}) i sejm nie zostanie zerwany (+1)</small>
+      </div>
+      {veto && <div className="balance-veto">Weto: tracisz {vetoCostNow} d i 3 posłów, ale król nie dostanie ani pola toru z tego sejmu.</div>}
     </div>
   );
 }
@@ -410,6 +461,17 @@ function MusterDecision({ s, h, act }: { s: GameState; h: Role; act: (d: Decisio
           koszt <DucatIcon size={18} /> {cost}
         </span>
       </div>
+      <p className="help muster-effect">
+        Kurs: {musterRates(s, h).map(([d, b]) => `${d} d = ${b} ch.`).join(' albo ')}
+        {h === 'radziwill' ? ' (prywatna armia Radziwiłłów — liczymy najtańszy wariant)' : ''}. Zostanie Ci <b>{ducats - cost} d</b>
+        {h !== 'king' && (
+          <>
+            {' '}
+            · Twoja Estyma: {magnateScore(mag(s, h)).total} → <b>{magnateScore({ ...mag(s, h), ducats: ducats - cost }).total}</b> (fundacje 4 d = 1)
+          </>
+        )}
+        {' '}· żołd po epoce za całe wojsko: <b>{Math.ceil(((h === 'king' ? s.king.banners : mag(s, h).banners) + n) / (h === 'king' ? kingUpkeepPer(s) : 2))} d</b>
+      </p>
       <button className="btn btn-primary" onClick={() => act({ kind: 'muster', buy: n })}>
         {n ? `Zaciągnij ${n}` : 'Nie zbroję się'}
       </button>

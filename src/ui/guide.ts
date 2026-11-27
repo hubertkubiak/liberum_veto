@@ -59,7 +59,7 @@ export const TIPS: Record<RoleKind, Partial<Record<Phase, string>>> = {
   magnate: {
     draft1:
       'Szlachta podnosi Estymę (punkty). Obcy dwór daje dużo wojska kosztem Estymy — przydaje się do rokoszu. Karty z rezerwą dają dukaty, które na koniec zamienią się w fundacje.',
-    draft2: 'Masz teraz 2 karty na 2 sejmy tej epoki. Każdą zagrywasz tylko wtedy, gdy odrzucisz ofertę króla.',
+    draft2: 'Po tym wyborze będziesz mieć 2 karty na 2 sejmy tej epoki. Kartę zagrywasz tylko wtedy, gdy odrzucisz ofertę króla — inaczej ją odrzucasz. Niezagrane przepadają na koniec epoki.',
     negotiation:
       'Zobacz swoją zakrytą ofertę. Duży czek albo nadanie z Estymą bywa warte więcej niż karta korzyści. Pamiętaj jednak, że przyjęcie oznacza ZA dla obu ustaw — przesuwasz króla na torze.',
     voting:

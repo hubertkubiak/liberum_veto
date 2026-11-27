@@ -3,6 +3,7 @@ import { Coat } from '../art/heraldry';
 import { HOUSES } from '../engine/data';
 import type { GameOptions, GameState, Role } from '../engine/types';
 import { ActionPanel } from './ActionPanel';
+import { Briefing, GoalBar } from './Goal';
 import { Stage } from './Stage';
 import { EraBadge, KingPanel, MagnatePanel, TrackBar } from './Table';
 import { BannerIcon, CrownIcon, DeputyIcon, DucatIcon, EsteemIcon, HandIcon, VetoIcon } from '../art/icons';
@@ -20,6 +21,7 @@ function Game({ opts, onExit, onNewGame }: { opts: GameOptions; onExit: () => vo
   const s = g.state;
   const [god, setGod] = useState(opts.human === null);
   const [rules, setRules] = useState(false);
+  const [briefing, setBriefing] = useState(opts.human !== null);
   const sees = (r: Role) => god || s.human === r;
   const step = PHASE_STEP[s.phase];
 
@@ -70,6 +72,7 @@ function Game({ opts, onExit, onNewGame }: { opts: GameOptions; onExit: () => vo
           ))}
         </div>
         <Stage s={s} sees={sees} onNewGame={onNewGame} onExit={onExit} />
+        <GoalBar s={s} />
         <div className="bottom">
           <KingPanel s={s} sees={sees} />
           <ActionPanel s={s} humanTurn={g.humanTurn} act={g.act} next={g.next} canNext={g.canNext} auto={g.auto} />
@@ -78,6 +81,16 @@ function Game({ opts, onExit, onNewGame }: { opts: GameOptions; onExit: () => vo
 
       <Chronicle s={s} />
       {rules && <RulesModal s={s} onClose={() => setRules(false)} />}
+      {briefing && s.human && (
+        <Briefing
+          role={s.human}
+          onClose={() => setBriefing(false)}
+          onRules={() => {
+            setBriefing(false);
+            setRules(true);
+          }}
+        />
+      )}
     </div>
   );
 }
